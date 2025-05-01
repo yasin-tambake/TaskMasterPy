@@ -1,0 +1,72 @@
+name: Custom Script Workflow
+description: A workflow that uses a custom Python script for data transformation
+
+triggers:
+  - type: time
+    name: Hourly Trigger
+    config:
+      schedule_str: every 1 hour
+
+actions:
+  - id: load_data
+    type: load_csv
+    name: Load CSV Data
+    config:
+      file_path: ./data/test.csv
+
+  - id: clean_data
+    type: drop_na
+    name: Clean Data
+    config:
+      # No specific configuration needed
+    depends_on:
+      - load_data
+
+  - id: run_script
+    type: run_python
+    name: Run Custom Transformation
+    config:
+      script_path: ./examples/custom_transform.py
+      function_name: main
+      kwargs:
+        df: ${clean_data}
+        method: sqrt
+      pass_context: false
+      return_dataframe: true
+    depends_on:
+      - clean_data
+
+  - id: add_features
+    type: run_python
+    name: Add Derived Features
+    config:
+      script_path: ./examples/custom_transform.py
+      function_name: add_derived_features
+      kwargs:
+        df: ${run_script}
+        config:
+          interaction_terms: [["A", "B"]]
+          poly_columns: ["A"]
+          poly_degree: 2
+      pass_context: false
+      return_dataframe: true
+    depends_on:
+      - run_script
+
+  - id: save_data
+    type: save_csv
+    name: Save Transformed Data
+    config:
+      file_path: ./data/test_script_transformed.csv
+      index: false
+    depends_on:
+      - add_features
+
+  - id: notify
+    type: console_notify
+    name: Notify Completion
+    config:
+      message: "Script workflow completed successfully"
+      level: success
+    depends_on:
+      - save_data

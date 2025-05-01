@@ -1,0 +1,33 @@
+Metadata-Version: 2.1
+Name: taskmasterpy
+Version: 0.1.0
+Summary: A Python-based automation framework for data operations
+Home-page: https://github.com/taskmasterpy/taskmasterpy
+Author: TaskMasterPy Team
+Author-email: info@taskmasterpy.org
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Topic :: Scientific/Engineering :: Information Analysis
+Classifier: Topic :: Software Development :: Libraries :: Application Frameworks
+Requires-Python: >=3.8
+Requires-Dist: pandas>=1.0.0
+Requires-Dist: numpy>=1.18.0
+Requires-Dist: pyyaml>=5.1
+Requires-Dist: typer>=0.3.0
+Requires-Dist: rich>=10.0.0
+Requires-Dist: schedule>=1.0.0
+Requires-Dist: requests>=2.25.0
+Requires-Dist: watchdog>=2.1.0
+Requires-Dist: jmespath>=0.10.0
+Provides-Extra: excel
+Requires-Dist: openpyxl>=3.0.0; extra == "excel"
+Provides-Extra: webhook
+Requires-Dist: flask>=2.0.0; extra == "webhook"
+Provides-Extra: win-notify
+Requires-Dist: win10toast>=0.9; extra == "win-notify"

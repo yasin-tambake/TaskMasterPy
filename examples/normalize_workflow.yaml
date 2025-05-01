@@ -1,0 +1,42 @@
+name: Normalize Data Workflow
+description: A workflow to normalize data in a CSV file
+
+triggers:
+  - type: time
+    name: Manual Trigger
+    config:
+      schedule_str: every 1 hour
+
+actions:
+  - id: load_data
+    type: load_csv
+    name: Load CSV Data
+    config:
+      file_path: ./data/test.csv
+  
+  - id: normalize_data
+    type: normalize
+    name: Normalize Data
+    config:
+      method: minmax
+      columns: ["age", "score"]
+    depends_on:
+      - load_data
+  
+  - id: save_data
+    type: save_csv
+    name: Save Normalized Data
+    config:
+      file_path: ./data/test_normalized.csv
+      index: false
+    depends_on:
+      - normalize_data
+  
+  - id: notify
+    type: console_notify
+    name: Notify Completion
+    config:
+      message: "Normalize workflow completed successfully"
+      level: success
+    depends_on:
+      - save_data

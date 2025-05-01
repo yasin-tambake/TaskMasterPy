@@ -1,0 +1,66 @@
+name: CSV File Monitor Workflow
+description: Monitor a directory for new CSV files, process them, and save the results
+
+triggers:
+  - type: file
+    name: CSV File Watcher
+    config:
+      path: ./data
+      recursive: true
+      patterns:
+        - "*.csv"
+      event_types:
+        - created
+        - modified
+
+actions:
+  - id: load_csv
+    type: load_csv
+    name: Load CSV File
+    config:
+      # The file path will be provided by the trigger
+      file_path: "{event_data.path}"
+  
+  - id: clean_data
+    type: drop_na
+    name: Clean Data
+    config:
+      # No specific configuration needed
+    depends_on:
+      - load_csv
+  
+  - id: fix_types
+    type: fix_data_types
+    name: Fix Data Types
+    config:
+      infer_types: true
+    depends_on:
+      - clean_data
+  
+  - id: transform_data
+    type: normalize
+    name: Normalize Data
+    config:
+      method: minmax
+      # Only normalize numeric columns
+    depends_on:
+      - fix_types
+  
+  - id: save_json
+    type: save_json
+    name: Save as JSON
+    config:
+      file_path: "./data/processed/{event_data.path|basename|replace('.csv', '.json')}"
+      orient: records
+      indent: 2
+    depends_on:
+      - transform_data
+  
+  - id: notify
+    type: console_notify
+    name: Notify Completion
+    config:
+      message: "Processed file: {event_data.path}"
+      level: success
+    depends_on:
+      - save_json

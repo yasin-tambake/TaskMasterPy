@@ -1,0 +1,2 @@
+[console_scripts]
+taskmaster = taskmaster.main:main

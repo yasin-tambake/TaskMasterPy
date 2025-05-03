@@ -8,7 +8,7 @@ setup(
     version="0.1.0",
     description="A Python-based automation framework for data operations",
     author="TaskMasterPy Team",
-    author_email="info@taskmasterpy.org",
+    author_email="taskmasterpy@gmail.com",
     url="https://github.com/taskmasterpy/taskmasterpy",
     packages=find_packages(),
     install_requires=[

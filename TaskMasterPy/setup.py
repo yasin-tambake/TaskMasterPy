@@ -2,11 +2,19 @@
 Setup script for TaskMasterPy.
 """
 from setuptools import setup, find_packages
+import os
+
+# Read the contents of README.md
+this_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name="taskmasterpy",
     version="0.1.0",
     description="A Python-based automation framework for data operations",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     author="TaskMasterPy Team",
     author_email="taskmasterpy@gmail.com",
     url="https://github.com/taskmasterpy/taskmasterpy",
@@ -36,7 +44,6 @@ setup(
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

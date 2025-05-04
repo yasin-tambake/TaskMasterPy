@@ -1,0 +1,35 @@
+actions:
+- config:
+    file_path: data/test.csv
+  id: load_data
+  name: Load CSV Data
+  type: load_csv
+- config: {}
+  depends_on:
+  - load_data
+  id: clean_data
+  name: Clean Data
+  type: drop_na
+- config:
+    file_path: data/test_cleaned.csv
+    index: false
+  depends_on:
+  - clean_data
+  id: save_data
+  name: Save Cleaned Data
+  type: save_csv
+- config:
+    level: success
+    message: YAML workflow completed successfully
+  depends_on:
+  - save_data
+  id: notify
+  name: Notify Completion
+  type: console_notify
+description: A workflow defined in YAML
+name: YAML Config Workflow
+triggers:
+- config:
+    schedule_str: every 1 hour
+  name: Manual Trigger
+  type: time

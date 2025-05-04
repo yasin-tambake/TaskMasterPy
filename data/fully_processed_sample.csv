@@ -1,0 +1,11 @@
+id,name,age,salary,department
+1,John Doe,35.0,75000.0,Engineering
+2,Jane Smith,28.0,65000.0,Marketing
+3,Bob Johnson,42.0,85000.0,Finance
+4,Alice Brown,31.0,70000.0,Engineering
+5,Charlie Davis,39.0,80000.0,Sales
+6,Eva Wilson,,90000.0,Finance
+7,Frank Miller,36.0,,Engineering
+8,Grace Taylor,29.0,68000.0,Marketing
+9,Henry Clark,45.0,95000.0,
+10,Ivy Martin,33.0,72000.0,Sales

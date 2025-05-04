@@ -1,0 +1,11 @@
+id,name,age,salary,department
+1,John Doe,35,75000,Engineering
+2,Jane Smith,28,65000,Marketing
+3,Bob Johnson,42,85000,Finance
+4,Alice Brown,31,70000,Engineering
+5,Charlie Davis,39,80000,Sales
+6,Eva Wilson,,90000,Finance
+7,Frank Miller,36,,Engineering
+8,Grace Taylor,29,68000,Marketing
+9,Henry Clark,45,95000,
+10,Ivy Martin,33,72000,Sales

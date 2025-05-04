@@ -1,0 +1,5 @@
+include README.md
+recursive-include taskmaster *.py
+recursive-include examples *.py *.yaml *.json
+recursive-include data *.csv *.json *.xlsx
+global-exclude *.py[cod] __pycache__ *.so *.dylib

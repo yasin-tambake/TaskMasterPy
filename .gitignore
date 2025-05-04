@@ -95,3 +95,5 @@ logs/
 *.log
 config.local.yaml
 .DS_Store
+TaskMasterPy_Architecture_Plan.txt
+TaskMasterPy_Project_Division.txt

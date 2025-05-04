@@ -1,0 +1,41 @@
+name: Simple Data Processing Workflow
+description: A simple workflow to process a CSV file
+
+triggers:
+  - type: time
+    name: Manual Trigger
+    config:
+      schedule_str: every 1 hour
+
+actions:
+  - id: load_data
+    type: load_csv
+    name: Load CSV Data
+    config:
+      file_path: ./data/test.csv
+  
+  - id: clean_data
+    type: drop_na
+    name: Clean Data
+    config:
+      # No specific configuration needed
+    depends_on:
+      - load_data
+  
+  - id: save_data
+    type: save_csv
+    name: Save Cleaned Data
+    config:
+      file_path: ./data/test_cleaned.csv
+      index: false
+    depends_on:
+      - clean_data
+  
+  - id: notify
+    type: console_notify
+    name: Notify Completion
+    config:
+      message: "Simple workflow completed successfully"
+      level: success
+    depends_on:
+      - save_data

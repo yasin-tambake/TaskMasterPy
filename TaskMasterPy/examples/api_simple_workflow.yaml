@@ -1,0 +1,26 @@
+name: API Simple Workflow
+description: A simple workflow to call an API
+
+triggers:
+  - type: time
+    name: Manual Trigger
+    config:
+      schedule_str: every 1 hour
+
+actions:
+  - id: call_api
+    type: call_api
+    name: Call API
+    config:
+      url: "https://jsonplaceholder.typicode.com/posts/1"
+      method: "GET"
+      return_type: "json"
+  
+  - id: notify
+    type: console_notify
+    name: Notify Completion
+    config:
+      message: "API workflow completed successfully"
+      level: success
+    depends_on:
+      - call_api

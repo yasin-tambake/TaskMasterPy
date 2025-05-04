@@ -1,0 +1,75 @@
+name: File Transform Workflow
+description: A workflow that watches for CSV files, transforms the data, and saves the result
+
+triggers:
+  - type: file
+    name: CSV File Watcher
+    config:
+      path: ./data
+      patterns: ["*.csv"]
+      event_types: ["created", "modified"]
+      ignore_directories: true
+
+actions:
+  - id: load_data
+    type: load_csv
+    name: Load CSV Data
+    config:
+      file_path: ${event.path}
+      
+  - id: clean_data
+    type: drop_na
+    name: Clean Data
+    config:
+      # No specific configuration needed
+    depends_on:
+      - load_data
+  
+  - id: transform_data
+    type: normalize
+    name: Normalize Data
+    config:
+      method: minmax
+    depends_on:
+      - clean_data
+  
+  - id: aggregate_data
+    type: aggregate
+    name: Aggregate Data
+    config:
+      group_by: ["category"]
+      aggregations:
+        value: ["sum", "mean", "max"]
+      reset_index: true
+    depends_on:
+      - transform_data
+  
+  - id: save_data
+    type: save_csv
+    name: Save Transformed Data
+    config:
+      file_path: ${event.path.replace('.csv', '_transformed.csv')}
+      index: false
+    depends_on:
+      - aggregate_data
+  
+  - id: api_call
+    type: call_api
+    name: Send Data to API
+    config:
+      url: "https://httpbin.org/post"
+      method: "POST"
+      json: ${aggregate_data}
+      return_type: "json"
+    depends_on:
+      - aggregate_data
+  
+  - id: notify
+    type: console_notify
+    name: Notify Completion
+    config:
+      message: "File transformation workflow completed successfully"
+      level: success
+    depends_on:
+      - save_data
+      - api_call

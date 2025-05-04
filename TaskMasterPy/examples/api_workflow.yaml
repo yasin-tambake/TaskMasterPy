@@ -1,0 +1,91 @@
+name: API Integration Workflow
+description: A workflow that fetches data from an API, processes it, and sends results to another API
+
+triggers:
+  - type: time
+    name: Daily Trigger
+    config:
+      schedule_str: every 1 day at 08:00
+
+actions:
+  - id: fetch_data
+    type: call_api
+    name: Fetch Data from API
+    config:
+      url: "https://jsonplaceholder.typicode.com/posts"
+      method: "GET"
+      return_type: "dataframe"
+  
+  - id: clean_data
+    type: drop_na
+    name: Clean Data
+    config:
+      # No specific configuration needed
+    depends_on:
+      - fetch_data
+  
+  - id: transform_data
+    type: normalize
+    name: Normalize Data
+    config:
+      columns: ["id", "userId"]
+      method: minmax
+    depends_on:
+      - clean_data
+  
+  - id: aggregate_data
+    type: aggregate
+    name: Aggregate Data
+    config:
+      group_by: ["userId"]
+      aggregations:
+        id: ["count"]
+      reset_index: true
+    depends_on:
+      - transform_data
+  
+  - id: save_data
+    type: save_csv
+    name: Save Processed Data
+    config:
+      file_path: ./data/api_data_processed.csv
+      index: false
+    depends_on:
+      - aggregate_data
+  
+  - id: send_data
+    type: call_api
+    name: Send Data to API
+    config:
+      url: "https://httpbin.org/post"
+      method: "POST"
+      json: ${aggregate_data.to_dict(orient='records')}
+      headers:
+        Content-Type: "application/json"
+        Authorization: "Bearer ${env.API_TOKEN}"
+      return_type: "json"
+    depends_on:
+      - aggregate_data
+  
+  - id: send_webhook
+    type: webhook
+    name: Send Webhook Notification
+    config:
+      url: "https://hooks.slack.com/services/YOUR_SLACK_WEBHOOK_URL"
+      method: "POST"
+      payload:
+        text: "API workflow completed successfully"
+        attachments:
+          - title: "Data Summary"
+            text: "Processed ${aggregate_data.shape[0]} records"
+    depends_on:
+      - send_data
+  
+  - id: notify
+    type: console_notify
+    name: Notify Completion
+    config:
+      message: "API workflow completed successfully"
+      level: success
+    depends_on:
+      - send_webhook

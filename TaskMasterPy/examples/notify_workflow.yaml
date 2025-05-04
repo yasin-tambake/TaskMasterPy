@@ -1,0 +1,43 @@
+name: Notification Workflow
+description: A workflow to demonstrate different notification types
+
+triggers:
+  - type: time
+    name: Manual Trigger
+    config:
+      schedule_str: every 1 hour
+
+actions:
+  - id: info_notify
+    type: console_notify
+    name: Info Notification
+    config:
+      message: "This is an info message"
+      level: info
+  
+  - id: warning_notify
+    type: console_notify
+    name: Warning Notification
+    config:
+      message: "This is a warning message"
+      level: warning
+    depends_on:
+      - info_notify
+  
+  - id: error_notify
+    type: console_notify
+    name: Error Notification
+    config:
+      message: "This is an error message"
+      level: error
+    depends_on:
+      - warning_notify
+  
+  - id: success_notify
+    type: console_notify
+    name: Success Notification
+    config:
+      message: "This is a success message"
+      level: success
+    depends_on:
+      - error_notify

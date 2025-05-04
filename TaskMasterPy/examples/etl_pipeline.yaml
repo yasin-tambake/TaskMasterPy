@@ -1,0 +1,68 @@
+name: ETL Pipeline
+description: Extract data from an API, transform it, and load it into a CSV file
+
+triggers:
+  - type: time
+    name: Manual Trigger
+    config:
+      schedule_str: every 1 hour
+
+actions:
+  # EXTRACT PHASE
+  - id: extract_data
+    type: call_api
+    name: Extract Data from API
+    config:
+      url: "https://jsonplaceholder.typicode.com/posts"
+      method: "GET"
+      return_type: "dataframe"
+  
+  # TRANSFORM PHASE
+  - id: clean_data
+    type: drop_na
+    name: Clean Data
+    config:
+      # Default behavior is to drop any row with NA
+    depends_on:
+      - extract_data
+  
+  - id: normalize_data
+    type: normalize
+    name: Normalize Data
+    config:
+      columns: ["userId", "id"]
+      method: "minmax"
+    depends_on:
+      - clean_data
+  
+  - id: aggregate_data
+    type: aggregate
+    name: Aggregate Data
+    config:
+      group_by: ["userId"]
+      aggregations:
+        id: ["count"]
+        title: ["count"]
+      reset_index: true
+    depends_on:
+      - normalize_data
+  
+  # LOAD PHASE
+  - id: load_data
+    type: save_csv
+    name: Load Data to CSV
+    config:
+      file_path: "./data/etl_result.csv"
+      index: false
+    depends_on:
+      - aggregate_data
+  
+  # NOTIFICATION
+  - id: notify
+    type: console_notify
+    name: Notify Completion
+    config:
+      message: "ETL pipeline completed successfully"
+      level: success
+    depends_on:
+      - load_data

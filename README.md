@@ -15,6 +15,7 @@ TaskMasterPy is an extensible, CLI-first, event-driven automation engine that al
 - **Plugin system**: Extend with custom triggers and actions
 - **CLI interface**: Run and manage workflows from the command line
 - **Autopilot mode**: One-liner for simple data processing tasks
+- **Database storage**: Store and manage workflows in a persistent database
 
 ## Installation
 
@@ -158,6 +159,45 @@ runner.run_workflow_now(workflow.id)
 ## Example Workflows
 
 TaskMasterPy comes with several example workflows to help you get started:
+
+### Database Storage Example
+
+```python
+from taskmaster.core.workflow import Workflow
+from taskmaster.actions.load_data import LoadCSVAction
+from taskmaster.actions.clean_data import DropNAAction
+from taskmaster.actions.save_data import SaveCSVAction
+from taskmaster.storage.db_storage import WorkflowStorage
+
+# Create a workflow
+workflow = Workflow(name="Sample DB Workflow")
+
+# Add actions
+load_action = LoadCSVAction(name="Load Data", config={"file_path": "data.csv"})
+clean_action = DropNAAction(name="Clean Data")
+save_action = SaveCSVAction(name="Save Data", config={"file_path": "cleaned.csv"})
+
+# Add dependencies
+workflow.add_action(load_action)
+workflow.add_action(clean_action)
+workflow.add_action(save_action)
+workflow.add_dependency(clean_action, load_action)
+workflow.add_dependency(save_action, clean_action)
+
+# Save to database
+storage = WorkflowStorage()
+storage.save_workflow(workflow.id, {
+    "id": workflow.id,
+    "name": workflow.name,
+    "description": workflow.description,
+    "actions": [
+        # Action configurations...
+    ]
+})
+
+# Load from database
+loaded_workflow = storage.get_workflow_instance(workflow.id)
+```
 
 ### Basic Data Processing
 
@@ -323,10 +363,18 @@ actions:
 
 ## CLI Commands
 
-- `taskmaster run <config_file>`: Run a workflow
-- `taskmaster list-workflows`: List available workflows
+### Workflow Management
+- `taskmaster run <config_file>`: Run a workflow from a file or database
+- `taskmaster list-workflows`: List available workflows from files and database
 - `taskmaster validate <config_file>`: Validate a workflow configuration
 - `taskmaster trigger-now <workflow_id>`: Manually trigger a workflow
+
+### Database Operations
+- `taskmaster db list`: List all workflows in the database
+- `taskmaster db import <file_path>`: Import a workflow from a file into the database
+- `taskmaster db export <workflow_id> <file_path>`: Export a workflow from the database to a file
+- `taskmaster db delete <workflow_id>`: Delete a workflow from the database
+- `taskmaster db run <workflow_id>`: Run a workflow from the database
 
 ## Contributing
 

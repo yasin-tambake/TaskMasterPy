@@ -1,0 +1,376 @@
+# TaskMasterPy Architecture Plan
+
+## 1. System Overview
+
+TaskMasterPy is a Python-based automation framework designed for data operations, enabling data scientists to create, manage, and execute data workflows. The system follows an event-driven architecture with a modular design that separates concerns into distinct components.
+
+## 2. Core Architecture
+
+### 2.1 High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Client Interfaces                        │
+│                                                                 │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────────┐    │
+│  │  CLI Interface │  │  Python API   │  │  Config Files     │   │
+│  │  (commands.py) │  │  (autopilot.py)│  │  (YAML/JSON)     │   │
+│  └───────────────┘  └───────────────┘  └───────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        Core Components                          │
+│                                                                 │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────────┐    │
+│  │   Workflow    │  │WorkflowRunner │  │  Plugin System    │    │
+│  │  (workflow.py)│  │  (runner.py)  │  │   (loader.py)     │    │
+│  └───────────────┘  └───────────────┘  └───────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Functional Components                       │
+│                                                                 │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────────┐    │
+│  │   Triggers    │  │    Actions    │  │     Storage       │    │
+│  │ (time, file,  │  │(load, clean,  │  │   (db_storage.py) │    │
+│  │  api, etc.)   │  │transform, etc)│  │                   │    │
+│  └───────────────┘  └───────────────┘  └───────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        Utility Components                       │
+│                                                                 │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────────┐    │
+│  │Configuration  │  │   Logging     │  │    Validators     │    │
+│  │  (config.py)  │  │  (logging.py) │  │  (validators.py)  │    │
+│  └───────────────┘  └───────────────┘  └───────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 2.2 Component Interactions
+
+1. **Client Interfaces** provide ways for users to interact with the system
+2. **Core Components** manage workflow creation, execution, and plugin loading
+3. **Functional Components** implement the actual business logic
+4. **Utility Components** provide supporting functionality
+
+## 3. Detailed Component Design
+
+### 3.1 Core Components
+
+#### 3.1.1 Workflow (workflow.py)
+- **Purpose**: Central class that manages triggers and actions in a directed acyclic graph (DAG)
+- **Key Responsibilities**:
+  - Maintain the DAG of actions with dependencies
+  - Register triggers and their callbacks
+  - Execute actions in the correct order
+  - Manage workflow context and state
+- **Key Methods**:
+  - `add_trigger(trigger)`: Add a trigger to the workflow
+  - `add_action(action)`: Add an action to the workflow
+  - `add_dependency(action, dependency)`: Create a dependency between actions
+  - `run(event_data)`: Execute the workflow
+  - `activate()`: Activate all triggers
+  - `deactivate()`: Deactivate all triggers
+
+#### 3.1.2 WorkflowRunner (runner.py)
+- **Purpose**: Manages the execution and lifecycle of workflows
+- **Key Responsibilities**:
+  - Register and track workflows
+  - Start and stop workflows
+  - Execute workflows on demand
+- **Key Methods**:
+  - `register_workflow(workflow)`: Register a workflow
+  - `start_workflow(workflow_id)`: Start a workflow
+  - `stop_workflow(workflow_id)`: Stop a workflow
+  - `run_workflow_now(workflow_id, event_data)`: Run a workflow immediately
+
+#### 3.1.3 Plugin System (loader.py)
+- **Purpose**: Dynamically load and register plugins
+- **Key Responsibilities**:
+  - Discover and load plugins from directories
+  - Register trigger and action plugins
+  - Provide access to registered plugins
+- **Key Methods**:
+  - `load_plugins(plugin_dir)`: Load plugins from a directory
+  - `load_plugins_from_entry_points()`: Load plugins from entry points
+  - `register_trigger(name, trigger_class)`: Register a trigger plugin
+  - `register_action(name, action_class)`: Register an action plugin
+
+### 3.2 Functional Components
+
+#### 3.2.1 Triggers
+- **Purpose**: Detect events and initiate workflows
+- **Base Class**: BaseTrigger (base.py)
+- **Types**:
+  - TimeTrigger: Schedule-based triggers
+  - FileTrigger: File system event triggers
+  - APIPollTrigger: API polling triggers
+  - WebhookTrigger: Webhook-based triggers
+  - DBTrigger: Database event triggers
+- **Key Methods**:
+  - `activate()`: Start listening for events
+  - `deactivate()`: Stop listening for events
+  - `fire(event_data)`: Fire the trigger with event data
+
+#### 3.2.2 Actions
+- **Purpose**: Perform specific tasks within workflows
+- **Base Class**: BaseAction (base.py)
+- **Categories**:
+  - Data Loading: LoadCSVAction, LoadJSONAction, etc.
+  - Data Cleaning: DropNAAction, FixDataTypesAction, etc.
+  - Data Transformation: NormalizeAction, AggregateAction, etc.
+  - Data Saving: SaveCSVAction, SaveJSONAction, etc.
+  - API Integration: CallAPIAction, WebhookAction
+  - Script Execution: RunPythonScriptAction, RunShellScriptAction
+  - Notifications: ConsoleNotifyAction, SystemNotifyAction, SendEmailAction
+- **Key Methods**:
+  - `execute(context)`: Execute the action
+  - `run(context)`: Run the action with error handling
+  - `add_dependency(action)`: Add a dependency to this action
+
+#### 3.2.3 Storage (db_storage.py)
+- **Purpose**: Persistent storage for workflows
+- **Key Responsibilities**:
+  - Save workflows to a database
+  - Load workflows from a database
+  - List, import, and export workflows
+- **Key Methods**:
+  - `save_workflow(workflow_id, config)`: Save a workflow
+  - `load_workflow(workflow_id)`: Load a workflow
+  - `list_workflows()`: List all workflows
+  - `import_from_file(file_path)`: Import a workflow from a file
+  - `export_to_file(workflow_id, file_path)`: Export a workflow to a file
+
+### 3.3 Utility Components
+
+#### 3.3.1 Configuration (config.py)
+- **Purpose**: Load and parse workflow configurations
+- **Key Methods**:
+  - `load_workflow_config(file_path)`: Load a workflow configuration
+  - `load_workflow_from_config(config)`: Create a workflow from a configuration
+
+#### 3.3.2 Logging (logging.py)
+- **Purpose**: Configure and manage logging
+- **Key Methods**:
+  - `configure_logging()`: Configure the logging system
+
+#### 3.3.3 Validators (validators.py)
+- **Purpose**: Validate workflow configurations
+- **Key Methods**:
+  - `validate_workflow_config(config)`: Validate a workflow configuration
+
+## 4. Data Flow
+
+### 4.1 Workflow Execution Flow
+
+```
+┌───────────┐     ┌───────────┐     ┌───────────┐     ┌───────────┐
+│  Trigger  │────▶│  Workflow │────▶│  Action 1 │────▶│  Action 2 │
+│  Event    │     │  Run      │     │  Execute  │     │  Execute  │
+└───────────┘     └───────────┘     └───────────┘     └───────────┘
+                                          │                 │
+                                          │                 │
+                                          ▼                 ▼
+                                    ┌───────────┐     ┌───────────┐
+                                    │  Context  │◀────│  Context  │
+                                    │  Update   │     │  Update   │
+                                    └───────────┘     └───────────┘
+```
+
+### 4.2 Configuration Flow
+
+```
+┌───────────┐     ┌───────────┐     ┌───────────┐     ┌───────────┐
+│  Config   │────▶│  Validate │────▶│  Create   │────▶│ Register  │
+│  File     │     │  Config   │     │  Workflow │     │ Workflow  │
+└───────────┘     └───────────┘     └───────────┘     └───────────┘
+                                                            │
+                                                            │
+                                                            ▼
+                                                      ┌───────────┐
+                                                      │  Execute  │
+                                                      │  Workflow │
+                                                      └───────────┘
+```
+
+## 5. Database Schema
+
+### 5.1 Workflows Table
+```
+┌─────────────┬─────────────┬─────────────┬─────────────┬─────────────┬─────────────┐
+│     id      │    name     │ description │   config    │ created_at  │ updated_at  │
+├─────────────┼─────────────┼─────────────┼─────────────┼─────────────┼─────────────┤
+│ TEXT (PK)   │ TEXT        │ TEXT        │ TEXT (JSON) │ TIMESTAMP   │ TIMESTAMP   │
+└─────────────┴─────────────┴─────────────┴─────────────┴─────────────┴─────────────┘
+```
+
+## 6. API Design
+
+### 6.1 Python API
+
+```python
+# Create a workflow
+workflow = Workflow(name="Data Processing")
+
+# Add a trigger
+trigger = TimeTrigger(name="Hourly", config={"schedule_str": "every 1 hour"})
+workflow.add_trigger(trigger)
+
+# Add actions
+load_action = LoadCSVAction(name="Load Data", config={"file_path": "data.csv"})
+clean_action = DropNAAction(name="Clean Data")
+save_action = SaveCSVAction(name="Save Data", config={"file_path": "processed.csv"})
+
+# Add actions to workflow
+workflow.add_action(load_action)
+workflow.add_action(clean_action)
+workflow.add_action(save_action)
+
+# Add dependencies
+workflow.add_dependency(clean_action, load_action)
+workflow.add_dependency(save_action, clean_action)
+
+# Run the workflow
+runner = WorkflowRunner()
+runner.register_workflow(workflow)
+runner.run_workflow_now(workflow.id)
+```
+
+### 6.2 CLI API
+
+```
+# Run a workflow
+taskmaster run workflow.yaml
+
+# List workflows
+taskmaster list-workflows
+
+# Validate a workflow
+taskmaster validate workflow.yaml
+
+# Manually trigger a workflow
+taskmaster trigger-now workflow_id
+
+# Database operations
+taskmaster db list
+taskmaster db import workflow.yaml
+taskmaster db export workflow_id exported.yaml
+taskmaster db delete workflow_id
+taskmaster db run workflow_id
+```
+
+### 6.3 Configuration API (YAML)
+
+```yaml
+name: Example Data Processing Workflow
+description: A simple workflow to process a CSV file
+
+triggers:
+  - type: time
+    name: Manual Trigger
+    config:
+      schedule_str: every 1 hour
+
+actions:
+  - id: load_data
+    type: load_csv
+    name: Load CSV Data
+    config:
+      file_path: ./data/test.csv
+
+  - id: clean_data
+    type: drop_na
+    name: Clean Data
+    depends_on:
+      - load_data
+
+  - id: save_data
+    type: save_csv
+    name: Save Cleaned Data
+    config:
+      file_path: ./data/example_cleaned.csv
+    depends_on:
+      - clean_data
+```
+
+## 7. Extension Points
+
+### 7.1 Custom Triggers
+- Create a new class inheriting from BaseTrigger
+- Implement activate() and deactivate() methods
+- Register the trigger with the plugin system
+
+### 7.2 Custom Actions
+- Create a new class inheriting from BaseAction
+- Implement execute() method
+- Register the action with the plugin system
+
+### 7.3 Plugin Entry Points
+- Create a Python package with entry points in setup.py:
+  ```python
+  entry_points={
+      'taskmaster.triggers': [
+          'my_trigger=my_package.triggers:MyTrigger',
+      ],
+      'taskmaster.actions': [
+          'my_action=my_package.actions:MyAction',
+      ],
+  }
+  ```
+
+## 8. Deployment Architecture
+
+### 8.1 Local Deployment
+- Install via pip
+- Run workflows via CLI or Python scripts
+- Store workflows in local SQLite database
+
+### 8.2 Server Deployment
+- Install on a server
+- Run as a service
+- Schedule workflows to run periodically
+- Store workflows in a server database
+
+## 9. Future Enhancements
+
+### 9.1 Short-term Enhancements
+- Web UI for workflow management
+- More action types for different data sources
+- Enhanced error handling and recovery
+- Workflow versioning
+
+### 9.2 Long-term Enhancements
+- Distributed workflow execution
+- Real-time monitoring dashboard
+- Integration with cloud services
+- Machine learning model training and deployment actions
+
+## 10. Development Roadmap
+
+### Phase 1: Core Framework
+- Implement core Workflow and WorkflowRunner classes
+- Create basic trigger types (TimeTrigger, FileTrigger)
+- Implement fundamental actions (load, clean, save)
+- Develop CLI interface
+
+### Phase 2: Enhanced Functionality
+- Add more trigger types (API, webhook, database)
+- Implement additional action types
+- Create the plugin system
+- Add database storage
+
+### Phase 3: Advanced Features
+- Implement workflow versioning
+- Add error handling and recovery
+- Create more complex example workflows
+- Enhance documentation and tutorials
+
+### Phase 4: Ecosystem Expansion
+- Develop additional plugins
+- Create a web UI
+- Implement distributed execution
+- Add monitoring and analytics
